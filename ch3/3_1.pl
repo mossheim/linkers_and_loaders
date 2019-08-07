@@ -3,10 +3,12 @@
 #
 # Project 3.1: Read and write object file
 
-$input_file = shift || die "Need an input file";
-$output_file = shift || die "Need an output file";
+use strict;
 
-%object_data = read_object_file($input_file);
+my $input_file = shift || die "Need an input file";
+my $output_file = shift || die "Need an output file";
+
+my %object_data = read_object_file($input_file);
 write_object_file($output_file, \%object_data);
 
 sub read_object_file {
@@ -55,7 +57,7 @@ sub read_meta_sizes {
     my $line = <INPUT>;
     my @sizes = split(/ +/, $line);
     $#sizes < 3 || die "More than 3 meta-sizes!\n";
-    for $i (0 .. 2) { $sizes[$i] = $sizes[$i] + 0; }
+    for my $i (0 .. 2) { $sizes[$i] = $sizes[$i] + 0; }
 
     # print "# sections: $sizes[0]\n";
     # print "# symbols: $sizes[1]\n";
@@ -153,7 +155,7 @@ sub write_relocations {
 
 sub write_section_data {
     my @section_datas = @{$_[0]};
-    for $data (@section_datas) { print OUTPUT $data; }
+    for my $data (@section_datas) { print OUTPUT $data; }
 }
 
 ####################################################################################################
@@ -171,8 +173,8 @@ sub get_line_fields {
 
 sub num_present_sections {
     my $i = 0;
-    for $section (@{$_[0]}) {
-        %section_info = %{$section};
+    for my $section (@{$_[0]}) {
+        my %section_info = %{$section};
         if ($section_info{'flags'} =~ /P/) {
             $i++;
         }
