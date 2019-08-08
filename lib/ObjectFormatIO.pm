@@ -1,7 +1,7 @@
 use strict;
 package ObjectFormatIO;
 
-sub read_object_file {
+sub read {
     my ($input_file) = @_;
     open_input_file($input_file);
     read_link($input_file);
@@ -15,7 +15,7 @@ sub read_object_file {
     return %result;
 }
 
-sub write_object_file {
+sub write {
     my $output_file = $_[0];
     my %object_data = %{$_[1]};
 
