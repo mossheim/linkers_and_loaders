@@ -6,7 +6,7 @@ use strict;
 use lib '../lib';
 use ObjectFormatIO;
 use Data::Dumper qw(Dumper);
-use List::Util qw(reduce);
+use List::Util qw(reduce max);
 
 # args: last is output file, rest are input
 my @input_files = @ARGV;
@@ -55,6 +55,10 @@ for my $file (@input_files) {
     }
 }
 
+my $tcbs = total_common_block_size(\@input_files);
+print "Total Common Block Size: $tcbs";
+$csi{bss}{size} += $tcbs;
+
 # generate output file data
 my %output_file_data = (
     'sections' => [ $csi{text}, $csi{data}, $csi{bss} ],
@@ -94,4 +98,28 @@ sub next_multiple_of_power_of_two {
 sub total_section_length {
     my ($sections, $name) = @_;
     return reduce { $a + $b->{size}; } 0, @{$sections{$name}};
+}
+
+# find sum of common blocks in input files
+# common blocks are undefined symbols with nonzero values; size is eq to value
+# take the common block size to be the largest value encountered for that symbol name
+sub total_common_block_size {
+    my @input_files = @{$_[0]};
+    my %common_blocks;
+    for my $file (@input_files) {
+        for my $symbol (@{$file->{symbols}}) {
+            if (is_common_block($symbol)) {
+                my $name = $symbol->{name};
+                my $size = $symbol->{value};
+                $common_blocks{$name} = max($common_blocks{$name}, $size);
+            }
+        }
+    }
+
+    return reduce { $a + $common_blocks{$b} } 0, (keys %common_blocks);
+}
+
+sub is_common_block {
+    my ($symbol) = @_;
+    return ($symbol->{value} > 0) && ($symbol->{flags} =~ 'U');
 }
