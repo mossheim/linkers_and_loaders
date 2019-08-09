@@ -1,6 +1,8 @@
 use strict;
 package ObjectFormatIO;
 
+# TODO use records or objects?
+
 sub read {
     my ($input_file) = @_;
     open_input_file($input_file);
@@ -11,7 +13,13 @@ sub read {
     my @relocs = read_relocations($num_relocs);
     my @section_data = read_section_data(num_present_sections(\@sections));
     close INPUT;
-    my %result = ('sections' => \@sections, 'symbols' => \@symbols, 'relocs' => \@relocs, 'section_data' => \@section_data);
+    my %result = (
+        'filename' => $input_file,
+        'sections' => \@sections,
+        'symbols' => \@symbols,
+        'relocs' => \@relocs,
+        'section_data' => \@section_data
+    );
     return %result;
 }
 
@@ -112,9 +120,9 @@ sub write_link {
 
 sub write_meta_sizes {
     my %object_data = %{$_[0]};
-    my $num_sections = $#{$object_data{'sections'}} + 1;
-    my $num_symbols = $#{$object_data{'symbols'}} + 1;
-    my $num_relocs = $#{$object_data{'relocs'}} + 1;
+    my $num_sections = $#{$object_data{sections}} + 1;
+    my $num_symbols = $#{$object_data{symbols}} + 1;
+    my $num_relocs = $#{$object_data{relocs}} + 1;
     print OUTPUT "$num_sections $num_symbols $num_relocs\n";
 }
 
