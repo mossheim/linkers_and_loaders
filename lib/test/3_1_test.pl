@@ -24,6 +24,8 @@ sub test_file {
     is($diff, '', "Input file: $input_file");
 }
 
-test_file("data/object1");
-test_file("data/object2");
-test_file("data/object3");
+test_file("data/empty");
+test_file("data/bss_only");
+test_file("data/secs");
+test_file("data/secs_syms");
+test_file("data/secs_syms_relocs");
