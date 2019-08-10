@@ -30,7 +30,7 @@ sub test_file {
     is($diff, '', "Input file: $input_file");
 }
 
-my $data_dir =  dirname(__FILE__) . "/data/";
+my $data_dir =  dirname(__FILE__) . "/data_3_1/";
 test_file($data_dir . "empty");
 test_file($data_dir . "bss_only");
 test_file($data_dir . "secs");

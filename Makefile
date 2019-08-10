@@ -1,4 +1,5 @@
 all: test
 
+.PHONY: test
 test:
-	perl lib/test/3_1_test.pl
+	perl test/test_3_1.pl
