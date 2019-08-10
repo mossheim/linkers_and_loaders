@@ -1,7 +1,23 @@
 use strict;
 package ObjectFormatIO;
 
-# TODO use records or objects?
+# Format:
+# object_data :: {
+#     filename => the filename
+#     sections => [ { name, start, size, flags } ]
+#     symbols => [ { name, value, section, flags } ]
+#     relocs => [ { loc, section, sym, flags } ]
+#     section_data => [ section_data ]
+# }
+#
+# where
+#
+# section flags: Read &| Write &| Present
+# symbol flags: Undefined | Defined
+# reloc flags: Absolute4 | Relative4
+# section_data :: string
+#
+# 'section' and 'sym' fields are 1-based indices
 
 sub read {
     my ($input_file) = @_;
@@ -14,11 +30,11 @@ sub read {
     my @section_data = read_section_data(num_present_sections(\@sections));
     close INPUT;
     my %result = (
-        'filename' => $input_file,
-        'sections' => \@sections,
-        'symbols' => \@symbols,
-        'relocs' => \@relocs,
-        'section_data' => \@section_data
+        filename => $input_file,
+        sections => \@sections,
+        symbols => \@symbols,
+        relocs => \@relocs,
+        section_data => \@section_data
     );
     return %result;
 }
@@ -30,10 +46,10 @@ sub write {
     open_output_file($output_file);
     write_link();
     write_meta_sizes(\%object_data);
-    write_sections($object_data{'sections'});
-    write_symbols($object_data{'symbols'});
-    write_relocations($object_data{'relocs'});
-    write_section_data($object_data{'section_data'});
+    write_sections($object_data{sections});
+    write_symbols($object_data{symbols});
+    write_relocations($object_data{relocs});
+    write_section_data($object_data{section_data});
     close OUTPUT;
 }
 
@@ -69,7 +85,7 @@ sub read_sections {
     my @result = ();
     for my $i (0 .. ($_[0]-1)) {
         my ($sec_name, $start, $size, $flags) = get_line_fields(4);
-        my %map = ( 'name' => $sec_name, 'start' => $start + 0, 'size' => $size + 0, 'flags' => $flags );
+        my %map = (name => $sec_name, start => $start + 0, size => $size + 0, flags => $flags );
         push(@result, \%map);
     }
 
@@ -80,7 +96,7 @@ sub read_symbols {
     my @result = ();
     for my $i (0 .. ($_[0]-1)) {
         my ($name, $value, $section, $flags) = get_line_fields(4);
-        my %map = ('name' => $name, 'value' => hex($value), 'section' => $section + 0, 'flags' => $flags);
+        my %map = (name => $name, value => hex($value), section => $section + 0, flags => $flags);
         push(@result, \%map);
     }
 
@@ -90,8 +106,8 @@ sub read_symbols {
 sub read_relocations {
     my @result = ();
     for my $i (0 .. ($_[0]-1)) {
-        my ($loc, $section, $sym_id, $flags) = get_line_fields(4);
-        my %map = ('loc' => hex($loc), 'section' => $section + 0, 'sym_id' => $sym_id + 0, 'flags' => $flags);
+        my ($loc, $section, $sym, $flags) = get_line_fields(4);
+        my %map = (loc => hex($loc), section => $section + 0, sym => $sym + 0, flags => $flags);
         push(@result, \%map);
     }
 
@@ -130,7 +146,7 @@ sub write_sections {
     my @sections = @{$_[0]};
     for my $sec (@sections) {
         my %sec = %{$sec};
-        print OUTPUT "$sec{'name'} $sec{'start'} $sec{'size'} $sec{'flags'}\n";
+        print OUTPUT "$sec{name} $sec{start} $sec{size} $sec{flags}\n";
     }
 }
 
@@ -138,8 +154,8 @@ sub write_symbols {
     my @symbols = @{$_[0]};
     for my $sym (@symbols) {
         my %sym = %{$sym};
-        my $value = sprintf("%x", $sym{'value'});
-        print OUTPUT "$sym{'name'} $value $sym{'section'} $sym{'flags'}\n";
+        my $value = sprintf("%x", $sym{value});
+        print OUTPUT "$sym{name} $value $sym{section} $sym{flags}\n";
     }
 }
 
@@ -147,8 +163,8 @@ sub write_relocations {
     my @relocs = @{$_[0]};
     for my $reloc (@relocs) {
         my %reloc = %{$reloc};
-        my $loc = sprintf("%x", $reloc{'loc'});
-        print OUTPUT "$loc $reloc{'section'} $reloc{'sym_id'} $reloc{'flags'}\n";
+        my $loc = sprintf("%x", $reloc{loc});
+        print OUTPUT "$loc $reloc{section} $reloc{sym} $reloc{flags}\n";
     }
 }
 
@@ -174,7 +190,7 @@ sub num_present_sections {
     my $i = 0;
     for my $section (@{$_[0]}) {
         my %section_info = %{$section};
-        if ($section_info{'flags'} =~ /P/) {
+        if ($section_info{flags} =~ /P/) {
             $i++;
         }
     }
