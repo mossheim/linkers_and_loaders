@@ -1,3 +1,5 @@
+use diagnostics;
+use warnings;
 use strict;
 package ObjectFormatIO;
 
@@ -72,7 +74,8 @@ sub read_meta_sizes {
     my $line = <INPUT>;
     my @sizes = split(/ +/, $line);
     $#sizes < 3 || die "More than 3 meta-sizes!\n";
-    for my $i (0 .. 2) { $sizes[$i] = $sizes[$i] + 0; }
+    for my $i (0 .. $#sizes) { $sizes[$i] = $sizes[$i] + 0; }
+    for my $i ($#sizes + 1 .. 2) { $sizes[$i] = 0 }
 
     # print "# sections: $sizes[0]\n";
     # print "# symbols: $sizes[1]\n";
