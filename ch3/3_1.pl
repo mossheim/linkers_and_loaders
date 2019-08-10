@@ -2,8 +2,10 @@
 # -*- perl -*-
 #
 # Project 3.1: Read and write object file
+use diagnostics;
+use warnings;
 use strict;
-use lib '../lib';
+use lib 'lib';
 use ObjectFormatIO;
 
 my $input_file = shift || die "Need an input file";
