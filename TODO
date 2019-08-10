@@ -1,0 +1,9 @@
+- Factor out functionality from 4_1.pl (create a separate 4_2.pl?)
+- Maybe use classes for object file format, if desired
+- Add automated tests
+    test cases?
+
+basic cycle:
+- run test
+- diff out file against expected
+- pass/fail
