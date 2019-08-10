@@ -1,9 +1,15 @@
+#!/usr/bin/env perl
+# -*- perl -*-
+#
+# Tests for 3.1: Read and write object file
+
 use diagnostics;
 use warnings;
 use strict;
 use Test::More qw( no_plan );
-use lib '..';
+use lib 'lib';
 use ObjectFormatIO;
+use File::Basename; # for dirname
 
 ####################################################################################################
 # Test cases
@@ -24,8 +30,9 @@ sub test_file {
     is($diff, '', "Input file: $input_file");
 }
 
-test_file("data/empty");
-test_file("data/bss_only");
-test_file("data/secs");
-test_file("data/secs_syms");
-test_file("data/secs_syms_relocs");
+my $data_dir =  dirname(__FILE__) . "/data/";
+test_file($data_dir . "empty");
+test_file($data_dir . "bss_only");
+test_file($data_dir . "secs");
+test_file($data_dir . "secs_syms");
+test_file($data_dir . "secs_syms_relocs");
