@@ -13,8 +13,5 @@ $#files >= 1 || die "Need at least one input file plus output file";
 my $output_file = pop @files;
 
 my @input_files = map { { ObjectFormatIO::read($_) } } @files;
-my %csi = StorageAllocation::calc_storage_allocation(\@input_files);
-my $output_file_data = StorageAllocation::generate_output_file_data(\%csi);
-
-# write output file
-ObjectFormatIO::write($output_file, $output_file_data);
+my %output_file_data = StorageAllocation::calc_storage_allocation(\@input_files);
+ObjectFormatIO::write($output_file, \%output_file_data);

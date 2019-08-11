@@ -3,12 +3,13 @@ use warnings;
 use strict;
 package StorageAllocation;
 use List::Util qw(reduce max);
+use Data::Dumper qw(Dumper);
 
 # Given an array of object datas, calculates combined sizes of segments.
 # Also implements UNIX-style common blocks.
 # Also updates the sections in the input with new locations after allocation.
 #
-# Output format:
+# Output format 'combined section info':
 #
 # csi :: {
 #     [ name w/o period => section_info ]
@@ -23,6 +24,12 @@ use List::Util qw(reduce max);
 # tcbs only for bss
 
 sub calc_storage_allocation {
+    my @input_files = @{$_[0]};
+    my %csi = StorageAllocation::calc_combined_section_info(\@input_files);
+    return StorageAllocation::generate_output_file_data(\%csi);
+}
+
+sub calc_combined_section_info {
     my @input_files = @{$_[0]};
 
     # see above for format of csi

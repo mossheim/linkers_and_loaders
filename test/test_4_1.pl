@@ -31,8 +31,7 @@ sub test_file {
     -f $exp_file || die "Expected file $exp_file does not exist";
 
     my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
-    my %csi = StorageAllocation::calc_storage_allocation(\@input_data);
-    my $output_file_data = StorageAllocation::generate_output_file_data(\%csi);
+    my $output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
     ObjectFormatIO::write($output_file, $output_file_data);
 
     my $diff = `diff $output_file $exp_file`;
