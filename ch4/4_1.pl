@@ -56,9 +56,8 @@ for my $file (@input_files) {
     }
 }
 
-my $tcbs = total_common_block_size(\@input_files);
-# print "Total Common Block Size: $tcbs";
-$csi{bss}{size} += $tcbs;
+$csi{bss}{tcbs} = total_common_block_size(\@input_files);
+$csi{bss}{size} += $csi{bss}{tcbs};
 
 # generate output file data
 my %output_file_data = (
