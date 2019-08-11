@@ -1,0 +1,5 @@
+LINK
+3 0 0
+.text 4096 22 RP
+.data 8192 24 RWP
+.bss 8216 66 RW

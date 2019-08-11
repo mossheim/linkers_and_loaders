@@ -1,7 +1,6 @@
 - Factor out functionality from 4_1.pl (create a separate 4_2.pl?)
 - Maybe use classes for object file format, if desired
 - Refactor 4_1.pl and rewrite tests in Perl
-- Add more combining tests for 4.2 functionality
 - rename 4_1.pl to something that reflects it's for all ch4 projs?
 
 basic cycle:
