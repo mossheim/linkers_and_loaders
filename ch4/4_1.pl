@@ -9,12 +9,12 @@ use Data::Dumper qw(Dumper);
 use List::Util qw(reduce max);
 
 # args: last is output file, rest are input
-my @input_files = @ARGV;
-$#input_files >= 1 || die "Need at least one input file plus output file";
-my $output_file = pop @input_files;
+my @files = @ARGV;
+$#files >= 1 || die "Need at least one input file plus output file";
+my $output_file = pop @files;
 
 # read input files
-my @input_files = map { { ObjectFormatIO::read($_) } } @input_files;
+my @input_files = map { { ObjectFormatIO::read($_) } } @files;
 
 # group all .text, .data, .bss
 my @section_names = ('.text', '.bss', '.data');
@@ -50,13 +50,14 @@ for my $file (@input_files) {
         # name minus dot
         my $nmd = substr($file_sec->{name}, 1);
         # accum is a temporary field to accumulate sizes
+        if (not exists $csi{$nmd}{accum}) { $csi{$nmd}{accum} = 0; };
         $file_sec->{start} = $csi{$nmd}{start} + $csi{$nmd}{accum};
         $csi{$nmd}{accum} += $file_sec->{size};
     }
 }
 
 my $tcbs = total_common_block_size(\@input_files);
-print "Total Common Block Size: $tcbs";
+# print "Total Common Block Size: $tcbs";
 $csi{bss}{size} += $tcbs;
 
 # generate output file data
