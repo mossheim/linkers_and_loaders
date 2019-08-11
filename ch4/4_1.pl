@@ -112,6 +112,7 @@ sub total_common_block_size {
             if (is_common_block($symbol)) {
                 my $name = $symbol->{name};
                 my $size = $symbol->{value};
+                if (not exists $common_blocks{$name}) { $common_blocks{$name} = 0; }
                 $common_blocks{$name} = max($common_blocks{$name}, $size);
             }
         }
