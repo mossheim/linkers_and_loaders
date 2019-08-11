@@ -27,7 +27,7 @@ sub calc_storage_allocation {
 
     # see above for format of csi
     my %csi = calc_combined_sizes(\@input_files);
-    calc_section_layout(\%csi);
+    calc_section_layout(\%csi, total_common_block_size(\@input_files));
     assign_new_section_starts(\@input_files, \%csi);
     return %csi;
 }
@@ -47,6 +47,7 @@ sub generate_output_file_data {
 # Helper functions
 ####################################################################################################
 
+# returns a partial %csi map -- just map from name=>size
 sub calc_combined_sizes {
     my @input_files = @{$_[0]};
 
@@ -64,8 +65,10 @@ sub calc_combined_sizes {
     return %csi;
 }
 
+# assigns section starts, ends, flags, and applies total common block size
 sub calc_section_layout {
     my %csi = %{$_[0]};
+    my $tcbs = $_[1];
 
     # text starts at 0x1000
     $csi{text}{start} = 0x1000;
@@ -83,7 +86,7 @@ sub calc_section_layout {
     $csi{text}{flags} = 'RP';
     $csi{data}{flags} = 'RWP';
     $csi{bss}{flags} = 'RW';
-    $csi{bss}{tcbs} = total_common_block_size(\@input_files);
+    $csi{bss}{tcbs} = $tcbs;
     $csi{bss}{size} += $csi{bss}{tcbs};
 }
 
