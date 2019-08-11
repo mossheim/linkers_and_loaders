@@ -3,7 +3,7 @@
 #
 # Project 3.1: Read and write object file
 use strict;
-use lib '../lib';
+use lib 'lib';
 use ObjectFormatIO;
 use Data::Dumper qw(Dumper);
 use List::Util qw(reduce max);
