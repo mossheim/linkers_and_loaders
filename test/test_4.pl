@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- perl -*-
 #
-# Tests for 4.2: Common blocks
+# Tests for 4.1, 4.2, 4.3: Storage allocation, common blocks
 
 use diagnostics;
 use warnings;
@@ -16,7 +16,7 @@ use File::Basename; # for dirname
 # Test cases
 ####################################################################################################
 
-my $data_dir =  dirname(__FILE__) . "/data_4_2/";
+my $data_dir;
 
 sub test_file {
     my @args = map { $data_dir . $_ } @_;
@@ -39,6 +39,13 @@ sub test_file {
     is($diff, '', "Test case: $test_name");
 }
 
+$data_dir =  dirname(__FILE__) . "/data_4_1/";
+test_file("obj1", "obj1");
+test_file("obj3", "obj3");
+test_file("obj1_obj2", "obj1", "obj2");
+test_file("obj2_obj3", "obj2", "obj3");
+
+$data_dir =  dirname(__FILE__) . "/data_4_2/";
 test_file("obj1", "obj1");
 test_file("obj2", "obj2");
 test_file("obj3", "obj3");
@@ -46,3 +53,5 @@ test_file("obj1_obj2", "obj1", "obj2");
 test_file("obj1_obj3", "obj1", "obj3");
 test_file("obj2_obj3", "obj2", "obj3");
 test_file("obj1_obj2_obj3", "obj1", "obj2", "obj3");
+
+$data_dir =  dirname(__FILE__) . "/data_4_3/";
