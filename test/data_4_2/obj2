@@ -1,0 +1,8 @@
+LINK
+3 1
+.text 0 5 RP
+.data 0 6 RWP
+.bss 0 7 RW
+sym1 20 0 U
+0123456789
+012345678901

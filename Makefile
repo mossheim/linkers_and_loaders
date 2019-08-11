@@ -4,3 +4,4 @@ all: test
 test:
 	perl test/test_3_1.pl
 	test/test_4_1.sh
+	test/test_4_2.sh
