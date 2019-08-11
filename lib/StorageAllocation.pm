@@ -6,6 +6,7 @@ use List::Util qw(reduce max);
 
 # Given an array of object datas, calculates combined sizes of segments.
 # Also implements UNIX-style common blocks.
+# Also updates the sections in the input with new locations after allocation.
 #
 # Output format:
 #
@@ -24,48 +25,10 @@ use List::Util qw(reduce max);
 sub calc_storage_allocation {
     my @input_files = @{$_[0]};
 
-    # group all .text, .data, .bss
-    my @section_names = ('.text', '.bss', '.data');
-    my %sections = map { $_ => [ get_sections_from_files(\@input_files, $_) ] } @section_names;
-
-    # calculate combined sizes
-    # 'csi' = combined section info
-    my %csi = map { substr($_, 1) => {'name'=>$_} } @section_names;
-    for my $name (@section_names) {
-        $csi{substr($name, 1)}{size} = total_section_length(\%sections, $name)
-    }
-
-    # text starts at 0x1000
-    $csi{text}{start} = 0x1000;
-    $csi{text}{end} = $csi{text}{start} + $csi{text}{size};
-
-    # data starts at next multiple of 1000 rounded up from end of text
-    $csi{data}{start} = next_multiple_of_power_of_two($csi{text}{end}, 12);
-    $csi{data}{end} = $csi{data}{start} + $csi{data}{size};
-
-    # bss starts at next multiple of 4 rounded up from end of data
-    $csi{bss}{start} = next_multiple_of_power_of_two($csi{data}{end}, 2);
-    # don't need to compute end
-
-    # additional fields
-    $csi{text}{flags} = 'RP';
-    $csi{data}{flags} = 'RWP';
-    $csi{bss}{flags} = 'RW';
-
-    # assign new locations in each file's sections
-    for my $file (@input_files) {
-        for my $file_sec (@{$file->{sections}}) {
-            # name minus dot
-            my $nmd = substr($file_sec->{name}, 1);
-            # accum is a temporary field to accumulate sizes
-            if (not exists $csi{$nmd}{accum}) { $csi{$nmd}{accum} = 0; };
-            $file_sec->{start} = $csi{$nmd}{start} + $csi{$nmd}{accum};
-            $csi{$nmd}{accum} += $file_sec->{size};
-        }
-    }
-
-    $csi{bss}{tcbs} = total_common_block_size(\@input_files);
-    $csi{bss}{size} += $csi{bss}{tcbs};
+    # see above for format of csi
+    my %csi = calc_combined_sizes(\@input_files);
+    calc_section_layout(\%csi);
+    assign_new_section_starts(\@input_files, \%csi);
     return %csi;
 }
 
@@ -83,6 +46,46 @@ sub generate_output_file_data {
 ####################################################################################################
 # Helper functions
 ####################################################################################################
+
+sub calc_combined_sizes {
+    my @input_files = @{$_[0]};
+
+    # group all .text, .data, .bss
+    my @section_names = ('.text', '.bss', '.data');
+    my %sections = map { $_ => [ get_sections_from_files(\@input_files, $_) ] } @section_names;
+
+    # calculate combined sizes
+    # 'csi' = combined section info
+    my %csi = map { substr($_, 1) => {'name'=>$_} } @section_names;
+    for my $name (@section_names) {
+        $csi{substr($name, 1)}{size} = total_section_length(\%sections, $name)
+    }
+
+    return %csi;
+}
+
+sub calc_section_layout {
+    my %csi = %{$_[0]};
+
+    # text starts at 0x1000
+    $csi{text}{start} = 0x1000;
+    $csi{text}{end} = $csi{text}{start} + $csi{text}{size};
+
+    # data starts at next multiple of 1000 rounded up from end of text
+    $csi{data}{start} = next_multiple_of_power_of_two($csi{text}{end}, 12);
+    $csi{data}{end} = $csi{data}{start} + $csi{data}{size};
+
+    # bss starts at next multiple of 4 rounded up from end of data
+    $csi{bss}{start} = next_multiple_of_power_of_two($csi{data}{end}, 2);
+    # don't need to compute end
+
+    # additional fields
+    $csi{text}{flags} = 'RP';
+    $csi{data}{flags} = 'RWP';
+    $csi{bss}{flags} = 'RW';
+    $csi{bss}{tcbs} = total_common_block_size(\@input_files);
+    $csi{bss}{size} += $csi{bss}{tcbs};
+}
 
 sub get_sections_from_files {
     my @files = @{$_[0]};
@@ -133,6 +136,22 @@ sub total_common_block_size {
 sub is_common_block {
     my ($symbol) = @_;
     return ($symbol->{value} > 0) && ($symbol->{flags} =~ 'U');
+}
+
+sub assign_new_section_starts {
+    my @input_files = @{$_[0]};
+    my %csi = %{$_[1]};
+
+    for my $file (@input_files) {
+        for my $file_sec (@{$file->{sections}}) {
+            # name minus dot
+            my $nmd = substr($file_sec->{name}, 1);
+            # accum is a temporary field to accumulate sizes
+            if (not exists $csi{$nmd}{accum}) { $csi{$nmd}{accum} = 0; };
+            $file_sec->{start} = $csi{$nmd}{start} + $csi{$nmd}{accum};
+            $csi{$nmd}{accum} += $file_sec->{size};
+        }
+    }
 }
 
 1;
