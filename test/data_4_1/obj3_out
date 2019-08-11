@@ -1,5 +1,0 @@
-LINK
-3 0 0
-.text 4096 4096 RP
-.data 8192 4 RWP
-.bss 8196 4 RW
