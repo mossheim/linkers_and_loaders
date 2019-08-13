@@ -61,3 +61,4 @@ test_file("obj3", "obj3");
 test_file("obj4", "obj4");
 test_file("obj5", "obj5");
 test_file("obj1_obj2", "obj1", "obj2");
+test_file("obj12345", "obj1", "obj2", "obj3", "obj4", "obj5");
