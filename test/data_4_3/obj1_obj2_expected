@@ -1,0 +1,6 @@
+LINK
+4 0 0
+.pext 4096 10 RP
+.text 4106 12 RP
+.data 8192 6 RWP
+.fata 8198 8 RWP

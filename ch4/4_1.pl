@@ -6,6 +6,7 @@ use strict;
 use lib 'lib';
 use ObjectFormatIO;
 use StorageAllocation;
+use Data::Dumper qw(Dumper);
 
 # args: last is output file, rest are input
 my @files = @ARGV;

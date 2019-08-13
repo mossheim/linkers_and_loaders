@@ -25,29 +25,29 @@ use Data::Dumper qw(Dumper);
 
 sub calc_storage_allocation {
     my @input_files = @{$_[0]};
-    my %csi = StorageAllocation::calc_combined_section_info(\@input_files);
-    return StorageAllocation::generate_output_file_data(\%csi);
+    my @csi = StorageAllocation::calc_combined_section_info(\@input_files);
+    return StorageAllocation::generate_output_file_data(\@csi);
 }
 
 sub calc_combined_section_info {
     my @input_files = @{$_[0]};
 
     # see above for format of csi
-    my %csi = calc_combined_sizes(\@input_files);
-    calc_section_layout(\%csi, total_common_block_size(\@input_files));
-    assign_new_section_starts(\@input_files, \%csi);
-    return %csi;
+    my @csi = calc_combined_sizes(\@input_files);
+    calc_section_layout(\@csi, total_common_block_size(\@input_files));
+    assign_new_section_starts(\@input_files, \@csi);
+
+    return @csi;
 }
 
 # turn combined segment info into data that can be written via ObjectFormatIO::write
 sub generate_output_file_data {
-    my %csi = %{$_[0]};
-    return {
-        'sections' => [ $csi{text}, $csi{data}, $csi{bss} ],
+    return (
+        'sections' => $_[0],
         'symbols' => [],
         'relocs' => [],
         'section_data' => [],
-    };
+    );
 }
 
 ####################################################################################################
@@ -58,43 +58,103 @@ sub generate_output_file_data {
 sub calc_combined_sizes {
     my @input_files = @{$_[0]};
 
-    # group all .text, .data, .bss
-    my @section_names = ('.text', '.bss', '.data');
-    my %sections = map { $_ => [ get_sections_from_files(\@input_files, $_) ] } @section_names;
+    my @all_section_names = get_all_section_names(\@input_files);
+    my %name_to_sections = map { $_ => [ get_sections_from_files(\@input_files, $_) ] } @all_section_names;
 
     # calculate combined sizes
     # 'csi' = combined section info
-    my %csi = map { substr($_, 1) => {'name'=>$_} } @section_names;
-    for my $name (@section_names) {
-        $csi{substr($name, 1)}{size} = total_section_length(\%sections, $name)
+    my @csi = map { {
+            name => $_,
+            size => total_section_length($name_to_sections{$_}),
+            flags => validate_section_flags($name_to_sections{$_}),
+        } } @all_section_names;
+
+    sub flags_to_int {
+        my ($flags) = @_;
+        return $flags eq 'RP' ? 1 :
+            $flags eq 'RWP' ? 2 :
+            $flags eq 'RW' ? 3 : warn "Unsupported flag type $flags";
     }
 
-    return %csi;
+    sub cmp_name {
+        my ($l, $r) = @_;
+        return $l eq '.bss' ? 1 :
+            $r eq '.bss' ? -1 :
+            $l cmp $r;
+    }
+
+    return sort {
+        flags_to_int($a->{flags}) cmp flags_to_int($b->{flags}) || cmp_name($a->{name}, $b->{name})
+    } @csi;
+}
+
+# all unique section names
+sub get_all_section_names {
+    my @input_files = @{$_[0]};
+    my @names = map { map { $_->{name} } @{$_->{sections}} } @input_files;
+    my %names_map = map { $_, 1 } @names;
+    return keys %names_map;
+}
+
+# all unique section names
+sub validate_section_flags {
+    my @sections = @{$_[0]};
+    my $flags = $sections[0]->{flags};
+    my $i = 0;
+    for my $section (@sections) {
+        $section->{flags} eq $flags ||
+            warn "validate_section_flags: flags in section $i ($section->{flags}) do not match "
+                . "those in section 1 ($flags)\n";
+        $i++;
+    }
+
+    return $flags;
 }
 
 # assigns section starts, ends, flags, and applies total common block size
 sub calc_section_layout {
-    my %csi = %{$_[0]};
-    my $tcbs = $_[1];
+    my ($csi, $tcbs) = @_;
+    my $storage_ptr = 0x1000;
 
-    # text starts at 0x1000
-    $csi{text}{start} = 0x1000;
-    $csi{text}{end} = $csi{text}{start} + $csi{text}{size};
+    sub update_storage {
+        my ($ptr, $flags, $csi) = @_;
+        for my $sec (grep { $_->{flags} eq $flags } @$csi) {
+            $sec->{start} = $ptr;
+            $ptr += $sec->{size};
+        }
+
+        return $ptr;
+    }
+
+    $storage_ptr = update_storage($storage_ptr, 'RP', $csi);
 
     # data starts at next multiple of 1000 rounded up from end of text
-    $csi{data}{start} = next_multiple_of_power_of_two($csi{text}{end}, 12);
-    $csi{data}{end} = $csi{data}{start} + $csi{data}{size};
+    $storage_ptr = next_multiple_of_power_of_two($storage_ptr, 12);
+    $storage_ptr = update_storage($storage_ptr, 'RWP', $csi);
 
     # bss starts at next multiple of 4 rounded up from end of data
-    $csi{bss}{start} = next_multiple_of_power_of_two($csi{data}{end}, 2);
-    # don't need to compute end
+    $storage_ptr = next_multiple_of_power_of_two($storage_ptr, 2);
+    $storage_ptr = update_storage($storage_ptr, 'RW', $csi);
 
-    # additional fields
-    $csi{text}{flags} = 'RP';
-    $csi{data}{flags} = 'RWP';
-    $csi{bss}{flags} = 'RW';
-    $csi{bss}{tcbs} = $tcbs;
-    $csi{bss}{size} += $csi{bss}{tcbs};
+    if ($tcbs) {
+        for (@$csi) {
+            if ($_->{name} eq '.bss') {
+                $_->{size} += $tcbs;
+                $_->{tcbs} = $tcbs;
+                goto FOUND;
+            }
+        }
+
+        push(@$csi, {
+            name => '.bss',
+            size => $tcbs,
+            tcbs => $tcbs,
+            flags => 'RW',
+            start => $storage_ptr,
+        });
+
+        FOUND:
+    }
 }
 
 sub get_sections_from_files {
@@ -119,8 +179,7 @@ sub next_multiple_of_power_of_two {
 
 # length of all sections with given name in $sections
 sub total_section_length {
-    my ($sections, $name) = @_;
-    return reduce { $a + $b->{size}; } 0, @{$sections->{$name}};
+    return reduce { $a + $b->{size} } 0, @{$_[0]};
 }
 
 # find sum of common blocks in input files
@@ -150,16 +209,17 @@ sub is_common_block {
 
 sub assign_new_section_starts {
     my @input_files = @{$_[0]};
-    my %csi = %{$_[1]};
+    my @csi = @{$_[1]};
+    my %csi = map { $_->{name} => $_ } @csi;
 
     for my $file (@input_files) {
         for my $file_sec (@{$file->{sections}}) {
             # name minus dot
-            my $nmd = substr($file_sec->{name}, 1);
+            my $name = $file_sec->{name};
             # accum is a temporary field to accumulate sizes
-            if (not exists $csi{$nmd}{accum}) { $csi{$nmd}{accum} = 0; };
-            $file_sec->{start} = $csi{$nmd}{start} + $csi{$nmd}{accum};
-            $csi{$nmd}{accum} += $file_sec->{size};
+            if (not exists $csi{$name}{accum}) { $csi{$name}{accum} = 0; };
+            $file_sec->{start} = $csi{$name}{start} + $csi{$name}{accum};
+            $csi{$name}{accum} += $file_sec->{size};
         }
     }
 }

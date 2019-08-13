@@ -31,8 +31,8 @@ sub test_file {
     -f $exp_file || die "Expected file $exp_file does not exist";
 
     my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
-    my $output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
-    ObjectFormatIO::write($output_file, $output_file_data);
+    my %output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
+    ObjectFormatIO::write($output_file, \%output_file_data);
 
     my $diff = `diff $output_file $exp_file`;
     unlink $output_file;
@@ -55,3 +55,9 @@ test_file("obj2_obj3", "obj2", "obj3");
 test_file("obj1_obj2_obj3", "obj1", "obj2", "obj3");
 
 $data_dir =  dirname(__FILE__) . "/data_4_3/";
+test_file("obj1", "obj1");
+test_file("obj2", "obj2");
+test_file("obj3", "obj3");
+test_file("obj4", "obj4");
+test_file("obj5", "obj5");
+test_file("obj1_obj2", "obj1", "obj2");

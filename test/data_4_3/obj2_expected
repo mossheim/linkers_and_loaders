@@ -1,0 +1,4 @@
+LINK
+2 0 0
+.data 4096 6 RWP
+.fata 4102 8 RWP
