@@ -1,0 +1,4 @@
+sym1 test/data_5_1/obj1 test/data_5_1/obj1
+sym3 test/data_5_1/obj1 test/data_5_1/obj1
+#undef#
+sym2 test/data_5_1/obj1

@@ -9,7 +9,7 @@ use strict;
 use Test::More qw( no_plan );
 use lib 'lib';
 use ObjectFormatIO;
-use StorageAllocation;
+use SymbolResolution;
 use File::Basename; # for dirname
 
 ####################################################################################################
@@ -30,19 +30,19 @@ sub test_file {
     }
     -f $exp_file || die "Expected file $exp_file does not exist";
 
-    # my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
-    # my %output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
-    # ObjectFormatIO::write($output_file, \%output_file_data);
+    my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
+    my %global_symbol_table = SymbolResolution::create_global_symbol_table(\@input_data);
+    SymbolResolution::write_global_symbol_table($output_file, \%global_symbol_table);
 
-    # my $diff = `diff $output_file $exp_file`;
-    # unlink $output_file;
-    # is($diff, '', "Test case: $test_name");
+    my $diff = `diff $output_file $exp_file`;
+    unlink $output_file;
+    is($diff, '', "Test case: $test_name");
 }
 
 $data_dir =  dirname(__FILE__) . "/data_5_1/";
+test_file("obj1", "obj1");
+test_file("obj12", "obj1", "obj2");
 
 $data_dir =  dirname(__FILE__) . "/data_5_2/";
 
 $data_dir =  dirname(__FILE__) . "/data_5_3/";
-
-is(0, 0);

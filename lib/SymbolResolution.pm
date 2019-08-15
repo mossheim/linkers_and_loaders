@@ -77,29 +77,11 @@ sub write_global_symbol_table {
     for my $key (@sorted) {
         if (is_special_key($key)) { next; }
         print OUT "$key $tab{$key}{module}";
-        for (@{$tab{$key}{refs}}) { print OUT " $_"; }
+        print_space_sep_list($tab{$key}{refs});
         print OUT "\n";
     }
-
-    print OUT undef_entries_key() . "\n";
-
-    # TODO factor out
-    @sorted = sort keys %{$tab{undef_entries_key()}};
-    for my $key (@sorted) {
-        print OUT $key;
-        for (@{$tab{undef_entries_key()}{$key}}) { print OUT " $_"; }
-        print OUT "\n";
-    }
-
-    print OUT multidef_entries_key() . "\n";
-
-    @sorted = sort keys %{$tab{multidef_entries_key()}};
-    for my $key (@sorted) {
-        print OUT $key;
-        for (@{$tab{multidef_entries_key()}{$key}}) { print OUT " $_"; }
-        print OUT "\n";
-    }
-
+    print_section_with_header(\%tab, undef_entries_key());
+    print_section_with_header(\%tab, multidef_entries_key());
     close OUT;
 }
 
@@ -109,6 +91,24 @@ sub write_global_symbol_table {
 
 sub is_special_key {
     return $_[0] eq undef_entries_key() || $_[0] eq multidef_entries_key();
+}
+
+sub print_section_with_header {
+    my ($tab, $sec_key) = @_;
+    my $num_entries = %{$tab->{$sec_key}};
+    if ($num_entries == 0) { return; }
+
+    print OUT "$sec_key\n";
+    my @sorted = sort keys %{$tab->{$sec_key}};
+    for my $key (@sorted) {
+        print OUT $key;
+        print_space_sep_list($tab->{$sec_key}{$key});
+        print OUT "\n";
+    }
+}
+
+sub print_space_sep_list {
+    for (@{$_[0]}) { print OUT " $_"; }
 }
 
 1;
