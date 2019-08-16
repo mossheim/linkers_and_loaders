@@ -34,9 +34,14 @@ sub create_global_symbol_table {
                 push(@{$tab{multidef_entries_key()}{$name}}, $fname);
             } elsif (not exists $tab{$name}) {
                 # create entry
-                $tab{$name} = { defined => $isdef, refs => [ $fname ] };
+                $tab{$name} = {
+                    defined => $isdef,
+                    refs => [ $fname ],
+                };
                 if ($tab{$name}{defined}) {
                     $tab{$name}{module} = $fname;
+                    $tab{$name}{value} = $sym->{value};
+                    $tab{$name}{section} = $sym->{section};
                 }
             } elsif ($isdef) {
                 # if already defined, move to multidefs
@@ -67,6 +72,23 @@ sub create_global_symbol_table {
     return %tab;
 }
 
+# resolves symbol values to the section in which they are defined, after final storage allocation.
+sub resolve_symbol_values {
+    my @input_data = @{$_[0]};
+    my %tab = %{$_[1]};
+
+    my %data_by_filename = map { $_->{filename} => $_ } @input_data;
+
+    for my $key (keys %tab) {
+        if (is_special_key($key)) { next; }
+        my $module_name = $tab{$key}{module};
+        my $section_index = $tab{$key}{section} - 1;
+        my $section_offset = $data_by_filename{$module_name}{sections}[$section_index]{start};
+
+        $tab{$key}{value} += $section_offset;
+    }
+}
+
 sub write_global_symbol_table {
     my $output_file = $_[0];
     my %tab = %{$_[1]};
@@ -76,7 +98,7 @@ sub write_global_symbol_table {
     my @sorted = sort keys %tab;
     for my $key (@sorted) {
         if (is_special_key($key)) { next; }
-        print OUT "$key $tab{$key}{module}";
+        print OUT "$key $tab{$key}{value} $tab{$key}{module}";
         print_space_sep_list($tab{$key}{refs});
         print OUT "\n";
     }

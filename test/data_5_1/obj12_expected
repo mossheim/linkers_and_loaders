@@ -1,4 +1,4 @@
-sym3 test/data_5_1/obj1 test/data_5_1/obj1 test/data_5_1/obj2
+sym3 80 test/data_5_1/obj1 test/data_5_1/obj1 test/data_5_1/obj2
 #undef#
 sym2 test/data_5_1/obj1 test/data_5_1/obj2
 #multidef#

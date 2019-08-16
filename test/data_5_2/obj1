@@ -1,0 +1,10 @@
+LINK
+3 3 0
+.text 0 10 RP
+.data 0 10 RWP
+.bss 0 10 RW
+sym1 5 1 D
+sym2 6 2 D
+sym3 7 3 D
+TEXT
+DATA

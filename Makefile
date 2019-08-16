@@ -4,4 +4,5 @@ all: test
 test:
 	perl test/test_3.pl
 	perl test/test_4.pl
-	perl test/test_5.pl
+	perl test/test_5_1.pl
+	perl test/test_5_2.pl

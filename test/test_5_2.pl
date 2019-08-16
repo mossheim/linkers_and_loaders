@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- perl -*-
 #
-# Tests for 5.1, 5.2, 5.3: Symbol resolution
+# Tests for 5.2, 5.3: Symbol value resolution & common blox
 
 use diagnostics;
 use warnings;
@@ -9,6 +9,7 @@ use strict;
 use Test::More qw( no_plan );
 use lib 'lib';
 use ObjectFormatIO;
+use StorageAllocation;
 use SymbolResolution;
 use File::Basename; # for dirname
 
@@ -32,6 +33,10 @@ sub test_file {
 
     my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
     my %global_symbol_table = SymbolResolution::create_global_symbol_table(\@input_data);
+    my %output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
+    SymbolResolution::resolve_symbol_values(\@input_data, \%global_symbol_table);
+    # just rely on global table output
+    # ObjectFormatIO::write($output_file, \%output_file_data);
     SymbolResolution::write_global_symbol_table($output_file, \%global_symbol_table);
 
     my $diff = `diff $output_file $exp_file`;
@@ -39,10 +44,7 @@ sub test_file {
     is($diff, '', "Test case: $test_name");
 }
 
-$data_dir =  dirname(__FILE__) . "/data_5_1/";
-test_file("obj1", "obj1");
-test_file("obj12", "obj1", "obj2");
-
 $data_dir =  dirname(__FILE__) . "/data_5_2/";
+test_file("obj1", "obj1");
 
 $data_dir =  dirname(__FILE__) . "/data_5_3/";
