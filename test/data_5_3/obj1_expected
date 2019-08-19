@@ -1,0 +1,5 @@
+#commonblock#
+sym1 8214 test/data_5_3/obj1
+#undef#
+sym2 test/data_5_3/obj1
+sym3 test/data_5_3/obj1

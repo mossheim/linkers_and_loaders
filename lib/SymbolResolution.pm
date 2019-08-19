@@ -12,6 +12,7 @@ use Data::Dumper qw(Dumper);
 
 sub undef_entries_key { return '#undef#'; }
 sub multidef_entries_key { return '#multidef#'; }
+sub commonblock_entries_key { return '#commonblock#'; }
 
 sub create_global_symbol_table {
     my @input_files = @{$_[0]};
@@ -20,6 +21,7 @@ sub create_global_symbol_table {
     my %tab;
     $tab{undef_entries_key()} = {};
     $tab{multidef_entries_key()} = {};
+    $tab{commonblock_entries_key()} = {};
 
     for my $file_data (@input_files) {
         my $fname = $file_data->{filename};
@@ -36,6 +38,7 @@ sub create_global_symbol_table {
                 # create entry
                 $tab{$name} = {
                     defined => $isdef,
+                    max_value => $sym->{value},
                     refs => [ $fname ],
                 };
                 if ($tab{$name}{defined}) {
@@ -50,20 +53,29 @@ sub create_global_symbol_table {
                     delete $tab{$name};
                 } else {
                     # exists and this is a definition, mark accordingly
+                    # no need to record maxvalue
                     $tab{$name}{defined} = 1;
                     $tab{$name}{module} = $fname;
                     push @{$tab{$name}{refs}}, $fname;
                 }
             } else {
+                $tab{$name}{max_value} = max($tab{$name}{max_value}, $sym->{value});
                 push @{$tab{$name}{refs}}, $fname;
             }
         }
     }
 
-    # move undef entries to #undef#
+    # move undef entries to #undef#, common to #commonblock#
     for my $key (keys %tab) {
         unless (is_special_key($key) || $tab{$key}{defined}) {
-            $tab{undef_entries_key()}{$key} = [ @{$tab{$key}{refs}} ];
+            if ($tab{$key}{max_value} > 0) {
+                $tab{commonblock_entries_key()}{$key} = {
+                    refs => $tab{$key}{refs},
+                    size => $tab{$key}{max_value},
+                };
+            } else {
+                $tab{undef_entries_key()}{$key} = [ @{$tab{$key}{refs}} ];
+            }
             delete $tab{$key};
         }
     }
@@ -76,6 +88,7 @@ sub create_global_symbol_table {
 sub resolve_symbol_values {
     my @input_data = @{$_[0]};
     my %tab = %{$_[1]};
+    my @output_sections = @{$_[2]};
 
     my %data_by_filename = map { $_->{filename} => $_ } @input_data;
 
@@ -86,6 +99,21 @@ sub resolve_symbol_values {
         my $section_offset = $data_by_filename{$module_name}{sections}[$section_index]{start};
 
         $tab{$key}{value} += $section_offset;
+    }
+
+    my @bss_secs = grep { $_->{name} eq '.bss' } @output_sections;
+    my $maybe_bss = shift @bss_secs;
+    if (defined $maybe_bss) {
+        # print Dumper $maybe_bss;
+        my $com_block_end = $maybe_bss->{start} + $maybe_bss->{size};
+        my $com_block_start = $maybe_bss->{start} + $maybe_bss->{size} - $maybe_bss->{tcbs};
+        my @sorted = sort keys %{$tab{commonblock_entries_key()}};
+        my %com_blocks = %{$tab{commonblock_entries_key()}};
+        for my $key (@sorted) {
+            $com_blocks{$key}{value} = $com_block_start;
+            # print Dumper $com_blocks{$key};
+            $com_block_start += $com_blocks{$key}{size};
+        }
     }
 }
 
@@ -102,6 +130,8 @@ sub write_global_symbol_table {
         print_space_sep_list($tab{$key}{refs});
         print OUT "\n";
     }
+
+    print_common_block_section($tab{commonblock_entries_key()});
     print_section_with_header(\%tab, undef_entries_key());
     print_section_with_header(\%tab, multidef_entries_key());
     close OUT;
@@ -112,7 +142,7 @@ sub write_global_symbol_table {
 ####################################################################################################
 
 sub is_special_key {
-    return $_[0] eq undef_entries_key() || $_[0] eq multidef_entries_key();
+    return $_[0] eq undef_entries_key() || $_[0] eq multidef_entries_key() || $_[0] eq commonblock_entries_key();
 }
 
 sub print_section_with_header {
@@ -125,6 +155,20 @@ sub print_section_with_header {
     for my $key (@sorted) {
         print OUT $key;
         print_space_sep_list($tab->{$sec_key}{$key});
+        print OUT "\n";
+    }
+}
+
+sub print_common_block_section {
+    my %com_blocks = %{$_[0]};
+    my @sorted = sort keys %com_blocks;
+
+    if ($#sorted == -1) { return; }
+
+    print OUT commonblock_entries_key() . "\n";
+    for my $key (@sorted) {
+        print OUT "$key $com_blocks{$key}{value}";
+        print_space_sep_list($com_blocks{$key}{refs});
         print OUT "\n";
     }
 }

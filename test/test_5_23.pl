@@ -34,7 +34,7 @@ sub test_file {
     my @input_data = map { { ObjectFormatIO::read($_) } } @input_files;
     my %global_symbol_table = SymbolResolution::create_global_symbol_table(\@input_data);
     my %output_file_data = StorageAllocation::calc_storage_allocation(\@input_data);
-    SymbolResolution::resolve_symbol_values(\@input_data, \%global_symbol_table);
+    SymbolResolution::resolve_symbol_values(\@input_data, \%global_symbol_table, $output_file_data{sections});
     # just rely on global table output
     # ObjectFormatIO::write($output_file, \%output_file_data);
     SymbolResolution::write_global_symbol_table($output_file, \%global_symbol_table);
@@ -48,3 +48,6 @@ $data_dir =  dirname(__FILE__) . "/data_5_2/";
 test_file("obj1", "obj1");
 
 $data_dir =  dirname(__FILE__) . "/data_5_3/";
+test_file("obj1", "obj1");
+test_file("obj2", "obj2");
+test_file("obj12", "obj1", "obj2");

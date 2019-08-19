@@ -136,15 +136,15 @@ sub calc_section_layout {
     $storage_ptr = next_multiple_of_power_of_two($storage_ptr, 2);
     $storage_ptr = update_storage($storage_ptr, 'RW', $csi);
 
-    if ($tcbs) {
-        for (@$csi) {
-            if ($_->{name} eq '.bss') {
-                $_->{size} += $tcbs;
-                $_->{tcbs} = $tcbs;
-                goto FOUND;
-            }
+    for (@$csi) {
+        if ($_->{name} eq '.bss') {
+            $_->{size} += $tcbs;
+            $_->{tcbs} = $tcbs;
+            return;
         }
+    }
 
+    if ($tcbs) {
         push(@$csi, {
             name => '.bss',
             size => $tcbs,
@@ -152,8 +152,6 @@ sub calc_section_layout {
             flags => 'RW',
             start => $storage_ptr,
         });
-
-        FOUND:
     }
 }
 

@@ -1,0 +1,9 @@
+LINK
+2 3 0
+.text 0 10 RP
+.data 0 10 RWP
+sym2 6 0 U
+sym1 3 0 U
+sym3 0 0 U
+TEXT
+DATA
