@@ -1,7 +1,3 @@
 - Maybe use classes for object file format, if desired
 - factor common test code
-
-basic cycle:
-- run test
-- diff out file against expected
-- pass/fail
+- refactor SymbolResolution / StorageAllocation code, document
