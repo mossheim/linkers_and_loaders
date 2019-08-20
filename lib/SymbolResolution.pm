@@ -117,6 +117,13 @@ sub resolve_symbol_values {
     }
 }
 
+# checks that the global symbol table is in good condition -- no multi-defined or undefined symbols
+# prints warnings, returns bool to indicate success/fail
+sub validate_global_symbol_table {
+    # TODO
+    # TODO test this
+}
+
 sub write_global_symbol_table {
     my $output_file = $_[0];
     my %tab = %{$_[1]};
