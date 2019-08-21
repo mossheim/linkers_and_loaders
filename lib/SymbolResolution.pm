@@ -120,8 +120,19 @@ sub resolve_symbol_values {
 # checks that the global symbol table is in good condition -- no multi-defined or undefined symbols
 # prints warnings, returns bool to indicate success/fail
 sub validate_global_symbol_table {
-    # TODO
     # TODO test this
+    my ($tab) = @_;
+    my $result = 1;
+    if (keys %{$tab->{undef_entries_key()}}) {
+        print "Undefined entries in global symbol table";
+        $result = 0;
+    }
+    if (keys %{$tab->{multidef_entries_key()}}) {
+        print "Multiple definitions for same entry in global symbol table";
+        $result = 0;
+    }
+
+    return $result;
 }
 
 sub write_global_symbol_table {
